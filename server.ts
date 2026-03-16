@@ -498,9 +498,26 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-  });
+ // تشغيل السيرفر محلياً فقط (على جهازك)
+  if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running locally on http://localhost:${PORT}`);
+    });
+  }
+  
+  return app; // إرجاع التطبيق بدلاً من تشغيله المستمر ليتوافق مع Vercel
 }
 
-startServer().catch(console.error);
+// تجهيز السيرفر للعمل على بيئة Vercel السحابية (Serverless)
+let appInstance: any = null;
+export default async function handler(req: any, res: any) {
+  if (!appInstance) {
+    appInstance = await startServer();
+  }
+  return appInstance(req, res);
+}
+
+// تشغيل تلقائي عند التطوير على جهازك
+if (process.env.NODE_ENV !== 'production') {
+  startServer().catch(console.error);
+}
