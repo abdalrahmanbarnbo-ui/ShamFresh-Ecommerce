@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* وإذا كنت تستخدم النسخة القديمة من تيلويند، قد تكون الأسطر هكذا: */
+/*
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+*/

@@ -1,0 +1,5 @@
+{
+  "name": "Syrian Fresh Grocery",
+  "description": "متجر إلكتروني متكامل للبقالة للسوق السوري مع دعم الدفع المحلي وتتبع الطلبات.",
+  "requestFramePermissions": ["geolocation"]
+}

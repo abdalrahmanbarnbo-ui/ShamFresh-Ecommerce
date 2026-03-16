@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  name        String
+  phone       String    @unique
+  password    String?
+  address     String?
+  lat         Float?
+  lng         Float?
+  role        String    @default("customer") // 'customer' or 'admin'
+  token       String?
+  store_image String?
+  
+  // العلاقات (Relations)
+  orders      Order[]   @relation("CustomerOrders")
+  sales       Order[]   @relation("SellerOrders")
+  products    Product[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  image    String?
+  products Product[]
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  unit        String      // 'piece', 'kg', 'g'
+  stock       Float
+  image       String?
+  
+  // العلاقات
+  category_id Int
+  category    Category    @relation(fields: [category_id], references: [id])
+  seller_id   Int?
+  seller      User?       @relation(fields: [seller_id], references: [id])
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id                Int         @id @default(autoincrement())
+  total_amount      Float
+  status            String      @default("pending") // 'pending', 'delivering', 'delivered'
+  payment_method    String      // 'cod', 'sham_cash', 'bank_card'
+  payment_reference String?     
+  delivery_lat      Float?
+  delivery_lng      Float?
+  delivery_address  String?
+  rating            Int?
+  review            String?
+  created_at        DateTime    @default(now())
+
+  // العلاقات
+  user_id           Int
+  user              User        @relation("CustomerOrders", fields: [user_id], references: [id])
+  seller_id         Int?
+  seller            User?       @relation("SellerOrders", fields: [seller_id], references: [id])
+  items             OrderItem[]
+}
+
+model OrderItem {
+  id            Int     @id @default(autoincrement())
+  quantity      Float
+  price_at_time Float
+
+  // العلاقات
+  order_id      Int
+  order         Order   @relation(fields: [order_id], references: [id])
+  product_id    Int
+  product       Product @relation(fields: [product_id], references: [id])
+}
+
+model ActivationCode {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique
+  used       Int      @default(0)
+  created_at DateTime @default(now())
+}
