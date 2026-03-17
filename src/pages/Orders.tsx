@@ -1,220 +1,195 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Order } from '../types';
-import { Package, Truck, CheckCircle, Clock, Star } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Package, Clock, CheckCircle, Truck, XCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import { useSettings } from '../SettingsContext';
+
+interface OrderItem {
+  id: number;
+  product_name: string;
+  quantity: number;
+  price_at_time: number;
+  product_image: string | null;
+  unit: string;
+}
+
+interface Order {
+  id: number;
+  total_amount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  created_at: string;
+  seller_name: string;
+  items: OrderItem[];
+}
 
 export default function Orders() {
-  const { user, token, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [ratingData, setRatingData] = useState<{ [key: number]: { rating: number, review: string } }>({});
-
-  const fetchOrders = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch('/api/my-orders', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setOrders(data);
-    } catch (error) {
-      console.error("Failed to fetch orders", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user } = useAuth();
+  const { language, t } = useSettings();
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        navigate('/login');
-      } else if (user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        fetchOrders();
-      }
-    }
-  }, [user, authLoading, navigate]);
-
-  const handleRatingSubmit = async (orderId: number) => {
-    if (!token) return;
-    const data = ratingData[orderId];
-    if (!data || data.rating === 0) {
-      alert('يرجى اختيار التقييم أولاً');
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/orders/${orderId}/rating`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ rating: data.rating, review: data.review })
+    fetch('/api/my-orders', {
+      headers: { 'Authorization': `Bearer ${user?.token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setOrders(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Error fetching orders:", err);
+        setLoading(false);
       });
-      if (res.ok) {
-        alert('شكراً لتقييمك!');
-        fetchOrders();
-      }
-    } catch (error) {
-      console.error(error);
-      alert('حدث خطأ أثناء إرسال التقييم');
-    }
-  };
+  }, [user]);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ar-SY', { style: 'currency', currency: 'SYP', maximumFractionDigits: 0 }).format(price);
-  };
-
-  const getStatusInfo = (status: string) => {
+  // دالة مساعدة لتحديد شكل ولون كل حالة لتكون راقية جداً
+  const getStatusDisplay = (status: Order['status']) => {
     switch (status) {
-      case 'pending': return { text: 'قيد الانتظار', icon: <Clock className="text-amber-500" />, color: 'text-amber-500', bg: 'bg-amber-100', step: 1 };
-      case 'accepted': return { text: 'قيد التجهيز', icon: <Package className="text-blue-500" />, color: 'text-blue-500', bg: 'bg-blue-100', step: 2 };
-      case 'out_for_delivery': return { text: 'مع عامل التوصيل', icon: <Truck className="text-purple-500" />, color: 'text-purple-500', bg: 'bg-purple-100', step: 3 };
-      case 'delivered': return { text: 'تم التوصيل', icon: <CheckCircle className="text-emerald-500" />, color: 'text-emerald-500', bg: 'bg-emerald-100', step: 4 };
-      default: return { text: 'غير معروف', icon: <Clock />, color: 'text-slate-500', bg: 'bg-slate-100', step: 0 };
+      case 'pending':
+        return { 
+          icon: <Clock className="w-4 h-4" strokeWidth={2.5} />, 
+          text: language === 'ar' ? 'قيد المراجعة' : 'Pending', 
+          color: 'text-amber-600 dark:text-amber-400',
+          bg: 'bg-amber-50 dark:bg-amber-500/10',
+          border: 'border-amber-200 dark:border-amber-500/20'
+        };
+      case 'processing':
+        return { 
+          icon: <Package className="w-4 h-4" strokeWidth={2.5} />, 
+          text: language === 'ar' ? 'جاري التجهيز' : 'Processing', 
+          color: 'text-blue-600 dark:text-blue-400',
+          bg: 'bg-blue-50 dark:bg-blue-500/10',
+          border: 'border-blue-200 dark:border-blue-500/20'
+        };
+      case 'shipped':
+        return { 
+          icon: <Truck className="w-4 h-4" strokeWidth={2.5} />, 
+          text: language === 'ar' ? 'في الطريق' : 'Shipped', 
+          color: 'text-indigo-600 dark:text-indigo-400',
+          bg: 'bg-indigo-50 dark:bg-indigo-500/10',
+          border: 'border-indigo-200 dark:border-indigo-500/20'
+        };
+      case 'delivered':
+        return { 
+          icon: <CheckCircle className="w-4 h-4" strokeWidth={2.5} />, 
+          text: language === 'ar' ? 'تم التوصيل' : 'Delivered', 
+          color: 'text-emerald-600 dark:text-emerald-400',
+          bg: 'bg-emerald-50 dark:bg-emerald-500/10',
+          border: 'border-emerald-200 dark:border-emerald-500/20'
+        };
+      case 'cancelled':
+        return { 
+          icon: <XCircle className="w-4 h-4" strokeWidth={2.5} />, 
+          text: language === 'ar' ? 'ملغي' : 'Cancelled', 
+          color: 'text-red-600 dark:text-red-400',
+          bg: 'bg-red-50 dark:bg-red-500/10',
+          border: 'border-red-200 dark:border-red-500/20'
+        };
+      default:
+        return { icon: <Clock className="w-4 h-4" />, text: status, color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200' };
     }
   };
 
-  if (loading || authLoading) return (
+  if (loading) return (
     <div className="flex justify-center items-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
     </div>
   );
 
-  if (!user) return null;
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8 flex items-center gap-3">
-        <Package className="text-emerald-600" size={32} />
-        طلباتي
-      </h1>
+      <div className="flex items-center gap-3 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
+           <Package className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
+          {language === 'ar' ? 'سجل طلباتي' : 'My Orders'}
+        </h1>
+      </div>
 
       {orders.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-slate-100">
-          <Package className="mx-auto text-slate-300 mb-4" size={64} />
-          <h2 className="text-xl font-bold text-slate-600">لا يوجد طلبات سابقة</h2>
-          <p className="text-slate-500 mt-2">قم بإنشاء طلبك الأول الآن!</p>
+        <div className="text-center py-16 bg-white dark:bg-slate-800/50 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 flex flex-col items-center">
+          <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-full border border-slate-100 dark:border-slate-700 mb-4">
+            <Package className="w-12 h-12 text-slate-300 dark:text-slate-600" />
+          </div>
+          <p className="text-slate-500 dark:text-slate-400 text-lg">
+            {language === 'ar' ? 'لا يوجد لديك طلبات سابقة' : 'You have no past orders'}
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
           {orders.map(order => {
-            const statusInfo = getStatusInfo(order.status);
-            const orderDate = new Date(order.created_at).toLocaleDateString('ar-SY', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const statusStyle = getStatusDisplay(order.status);
             
             return (
-              <div key={order.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div key={order.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/80 overflow-hidden hover:shadow-md transition-shadow">
+                
+                {/* رأس الطلب (الرقم والحالة) - متجاوب مع الموبايل */}
+                <div className="p-5 border-b border-slate-100 dark:border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/50">
                   <div>
-                    <div className="text-sm text-slate-500 mb-1">طلب رقم #{order.id} {order.seller_name && <span className="text-emerald-600 font-bold mr-2">من: {order.seller_name}</span>}</div>
-                    <div className="font-medium text-slate-800">{orderDate}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        {language === 'ar' ? `طلب رقم #${order.id}` : `Order #${order.id}`}
+                      </span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                         <ArrowRight className={`w-3 h-3 ${language === 'en' ? 'rotate-180' : ''}`} />
+                         {order.seller_name}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                      {new Date(order.created_at).toLocaleString(language === 'ar' ? 'ar-SY' : 'en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
                   </div>
-                  <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold ${statusInfo.bg} ${statusInfo.color}`}>
-                    {statusInfo.icon}
-                    <span>{statusInfo.text}</span>
-                  </div>
-                </div>
-
-                {/* Tracking Stepper */}
-                <div className="p-6 border-b border-slate-100">
-                  <div className="relative flex justify-between items-center max-w-2xl mx-auto">
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 -z-10"></div>
-                    <div className={`absolute right-0 top-1/2 -translate-y-1/2 h-1 bg-emerald-500 -z-10 transition-all duration-500`} style={{ width: `${(statusInfo.step - 1) * 33.33}%` }}></div>
-                    
-                    {[
-                      { step: 1, icon: Clock, label: 'تم الطلب' },
-                      { step: 2, icon: Package, label: 'قيد التجهيز' },
-                      { step: 3, icon: Truck, label: 'في الطريق' },
-                      { step: 4, icon: CheckCircle, label: 'تم التوصيل' }
-                    ].map((item) => {
-                      const isActive = statusInfo.step >= item.step;
-                      const Icon = item.icon;
-                      return (
-                        <div key={item.step} className="flex flex-col items-center gap-2 bg-white px-2">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${isActive ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white text-slate-400'}`}>
-                            <Icon size={20} />
-                          </div>
-                          <span className={`text-xs sm:text-sm font-bold ${isActive ? 'text-emerald-700' : 'text-slate-400'}`}>{item.label}</span>
-                        </div>
-                      );
-                    })}
+                  
+                  {/* شارة الحالة الراقية */}
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${statusStyle.bg} ${statusStyle.border} ${statusStyle.color} w-fit`}>
+                    {statusStyle.icon}
+                    <span className="text-sm font-bold tracking-wide">
+                      {statusStyle.text}
+                    </span>
                   </div>
                 </div>
 
-                <div className="p-6">
-                  <h3 className="font-bold text-slate-800 mb-4">المنتجات</h3>
-                  <div className="space-y-3">
-                    {order.items?.map(item => (
-                      <div key={item.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={item.product_image || `https://picsum.photos/seed/${item.product_id}/50/50`} alt={item.product_name} className="w-12 h-12 rounded-lg object-cover" referrerPolicy="no-referrer" />
-                          <div>
-                            <div className="font-medium text-slate-800">{item.product_name}</div>
-                            <div className="text-sm text-slate-500">{item.quantity} {item.unit === 'kg' ? 'كغ' : item.unit === 'g' ? 'غ' : 'قطعة'}</div>
-                          </div>
+                {/* قائمة المنتجات في هذا الطلب */}
+                <div className="p-5">
+                  <div className="space-y-4">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-100 dark:border-slate-700/30">
+                        <img 
+                          src={item.product_image || 'https://via.placeholder.com/100'} 
+                          alt={item.product_name}
+                          className="w-14 h-14 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shadow-sm"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm md:text-base">
+                            {item.product_name}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {language === 'ar' ? 'الكمية:' : 'Qty:'} {item.quantity} {item.unit}
+                          </p>
                         </div>
-                        <div className="font-bold text-slate-800">{formatPrice(item.price_at_time * item.quantity)}</div>
+                        <div className="text-left rtl:text-right">
+                          <p className="font-bold text-emerald-600 dark:text-emerald-400 text-sm md:text-base">
+                            {(item.price_at_time * item.quantity).toLocaleString()} <span className="text-xs">ل.س</span>
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
-                  
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center">
-                    <span className="font-bold text-slate-600">الإجمالي (شامل التوصيل)</span>
-                    <span className="text-xl font-bold text-emerald-600">{formatPrice(order.total_amount + 5000)}</span>
+
+                  {/* الإجمالي */}
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                    <span className="font-bold text-slate-600 dark:text-slate-300">
+                      {language === 'ar' ? 'الإجمالي (شامل التوصيل)' : 'Total (incl. delivery)'}
+                    </span>
+                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                      {order.total_amount.toLocaleString()} <span className="text-sm font-bold">ل.س</span>
+                    </span>
                   </div>
                 </div>
 
-                {/* Rating Section */}
-                {order.status === 'delivered' && (
-                  <div className="p-6 bg-slate-50 border-t border-slate-200">
-                    {order.rating ? (
-                      <div>
-                        <h3 className="font-bold text-slate-800 mb-2">تقييمك للطلب</h3>
-                        <div className="flex items-center gap-1 mb-2">
-                          {[1, 2, 3, 4, 5].map(star => (
-                            <Star key={star} size={20} className={star <= order.rating! ? 'fill-amber-400 text-amber-400' : 'text-slate-300'} />
-                          ))}
-                        </div>
-                        {order.review && <p className="text-slate-600 text-sm bg-white p-3 rounded-lg border border-slate-200">{order.review}</p>}
-                      </div>
-                    ) : (
-                      <div>
-                        <h3 className="font-bold text-slate-800 mb-3">كيف كانت تجربتك؟</h3>
-                        <div className="flex items-center gap-2 mb-4">
-                          {[1, 2, 3, 4, 5].map(star => (
-                            <button 
-                              key={star}
-                              onClick={() => setRatingData(prev => ({ ...prev, [order.id]: { ...prev[order.id], rating: star } }))}
-                              className="focus:outline-none transition-transform hover:scale-110"
-                            >
-                              <Star 
-                                size={28} 
-                                className={(ratingData[order.id]?.rating || 0) >= star ? 'fill-amber-400 text-amber-400' : 'text-slate-300 hover:text-amber-300'} 
-                              />
-                            </button>
-                          ))}
-                        </div>
-                        <textarea 
-                          placeholder="أخبرنا عن رأيك بالخدمة والمنتجات (اختياري)"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none resize-none mb-3 text-sm"
-                          rows={2}
-                          value={ratingData[order.id]?.review || ''}
-                          onChange={e => setRatingData(prev => ({ ...prev, [order.id]: { ...prev[order.id], review: e.target.value } }))}
-                        ></textarea>
-                        <button 
-                          onClick={() => handleRatingSubmit(order.id)}
-                          className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors text-sm"
-                        >
-                          إرسال التقييم
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
