@@ -9,28 +9,22 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  // حالة (State) للتحكم بظهور النافذة المنبثقة
   const [showModal, setShowModal] = useState(false);
   const { language } = useSettings();
 
-  // منع إغلاق النافذة عند الضغط بداخلها
   const handleModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
 
   return (
     <>
-      {/* ========================================== */}
-      {/* 1. تصميم بطاقة المنتج (الموجودة في المتجر) */}
-      {/* ========================================== */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-slate-100 dark:border-slate-700 flex flex-col group">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-slate-100 dark:border-slate-700 flex flex-col group relative">
         
-        {/* منطقة قابلة للضغط لفتح التفاصيل */}
+        {/* منطقة فتح التفاصيل */}
         <div 
           className="cursor-pointer p-4 flex flex-col items-center flex-grow"
           onClick={() => setShowModal(true)}
         >
-          {/* الصورة الدائرية (كما في تصميمك) */}
           <div className="relative w-48 h-48 mb-4">
             <div className="absolute inset-0 bg-blue-500/10 dark:bg-blue-500/20 rounded-full blur-xl group-hover:blur-2xl transition-all duration-300"></div>
             <img 
@@ -38,7 +32,6 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               alt={product.name}
               className="relative w-full h-full object-cover rounded-full border-4 border-white dark:border-slate-800 shadow-md group-hover:scale-105 transition-transform duration-500"
             />
-            {/* التاج (مثلاً: الفئة) */}
             {product.category_name && (
               <span className="absolute top-2 right-2 bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                 {product.category_name}
@@ -55,11 +48,14 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           </p>
         </div>
 
-        {/* زر الإضافة للسلة (كما في تصميمك) */}
-        <div className="p-3">
+        {/* زر الإضافة للسلة الخارجي */}
+        <div className="p-3 relative z-10">
           <button 
-            onClick={() => onAddToCart(product)}
-            className="w-full bg-slate-900 dark:bg-slate-700 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation(); // السطر السحري لمنع تداخل الأحداث
+              onAddToCart(product);
+            }}
+            className="w-full bg-slate-900 dark:bg-slate-700 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             {language === 'ar' ? 'أضف للسلة' : 'Add to Cart'}
             <ShoppingBag size={18} />
@@ -67,28 +63,27 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* 2. النافذة المنبثقة (Modal) لتفاصيل المنتج */}
-      {/* ========================================== */}
+      {/* النافذة المنبثقة (Modal) */}
       {showModal && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-          onClick={() => setShowModal(false)} // إغلاق عند الضغط خارج النافذة
+          onClick={() => setShowModal(false)} 
         >
           <div 
-            className="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden max-w-lg w-full shadow-2xl relative animate-in fade-in zoom-in duration-200"
+            className="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden max-w-lg w-full shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]"
             onClick={handleModalClick}
           >
-            {/* زر الإغلاق */}
             <button 
-              onClick={() => setShowModal(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowModal(false);
+              }}
               className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
             >
               <X size={18} />
             </button>
 
-            {/* صورة المنتج الكبيرة */}
-            <div className="w-full h-64 bg-slate-100 dark:bg-slate-900 relative">
+            <div className="w-full h-64 bg-slate-100 dark:bg-slate-900 relative flex-shrink-0">
               <img 
                 src={product.image || 'https://via.placeholder.com/500'} 
                 alt={product.name}
@@ -96,8 +91,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               />
             </div>
 
-            {/* تفاصيل المنتج */}
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-1">
@@ -119,7 +113,6 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                 </div>
               </div>
 
-              {/* صندوق الشرح والمكونات */}
               <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-2xl mb-6 border border-slate-100 dark:border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <Info size={18} className="text-slate-400 dark:text-slate-300" />
@@ -132,11 +125,12 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
                 </p>
               </div>
 
-              {/* زر الإضافة للسلة الكبير */}
+              {/* زر الإضافة للسلة الداخلي */}
               <button 
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation(); // السطر السحري هنا أيضاً
                   onAddToCart(product);
-                  setShowModal(false); // إغلاق النافذة بعد الإضافة للسلة
+                  setShowModal(false); 
                 }}
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-emerald-600/30"
               >
