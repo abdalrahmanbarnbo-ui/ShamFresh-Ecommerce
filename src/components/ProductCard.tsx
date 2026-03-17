@@ -12,15 +12,19 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
   const [showModal, setShowModal] = useState(false);
   const { language } = useSettings();
 
-  const handleModalClick = (e: React.MouseEvent) => {
+  // هذه الدالة تمنع إغلاق النافذة عند الضغط بداخلها
+  const handleModalContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
 
   return (
     <>
+      {/* البطاقة الرئيسية (المعروضة في المتجر) 
+        لاحظ أننا أزلنا onClick من هنا تماماً
+      */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-slate-100 dark:border-slate-700 flex flex-col group relative">
         
-        {/* منطقة فتح التفاصيل */}
+        {/* منطقة فتح التفاصيل (فقط الصورة والنصوص هي التي تفتح النافذة) */}
         <div 
           className="cursor-pointer p-4 flex flex-col items-center flex-grow"
           onClick={() => setShowModal(true)}
@@ -48,14 +52,18 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           </p>
         </div>
 
-        {/* زر الإضافة للسلة الخارجي */}
-        <div className="p-3 relative z-10">
+        {/* زر الإضافة للسلة الخارجي
+          هذا الزر الآن معزول تماماً، ولن يفتح النافذة!
+        */}
+        <div className="p-3 relative z-10 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
           <button 
+            type="button"
             onClick={(e) => {
-              e.stopPropagation(); // السطر السحري لمنع تداخل الأحداث
+              e.preventDefault(); // نمنع أي سلوك افتراضي
+              e.stopPropagation(); // نمنع التداخل مع العناصر الأب
               onAddToCart(product);
             }}
-            className="w-full bg-slate-900 dark:bg-slate-700 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full bg-slate-900 dark:bg-slate-700 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
           >
             {language === 'ar' ? 'أضف للسلة' : 'Add to Cart'}
             <ShoppingBag size={18} />
@@ -63,21 +71,20 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         </div>
       </div>
 
-      {/* النافذة المنبثقة (Modal) */}
+      {/* النافذة المنبثقة (Modal) لتفاصيل المنتج
+      */}
       {showModal && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-          onClick={() => setShowModal(false)} 
+          className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          onClick={() => setShowModal(false)} // الضغط على الخلفية يغلق النافذة
         >
           <div 
             className="bg-white dark:bg-slate-800 rounded-3xl overflow-hidden max-w-lg w-full shadow-2xl relative animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]"
-            onClick={handleModalClick}
+            onClick={handleModalContentClick} // الضغط داخل النافذة لا يغلقها
           >
             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowModal(false);
-              }}
+              type="button"
+              onClick={() => setShowModal(false)}
               className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
             >
               <X size={18} />
@@ -127,8 +134,8 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
               {/* زر الإضافة للسلة الداخلي */}
               <button 
-                onClick={(e) => {
-                  e.stopPropagation(); // السطر السحري هنا أيضاً
+                type="button"
+                onClick={() => {
                   onAddToCart(product);
                   setShowModal(false); 
                 }}
