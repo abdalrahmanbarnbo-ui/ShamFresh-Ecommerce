@@ -10,7 +10,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   
-  // استدعاء دالة الترجمة واللغة من الإعدادات
   const { t, language } = useSettings();
 
   useEffect(() => {
@@ -33,35 +32,60 @@ export default function Home() {
       });
   }, [language]);
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div></div>;
-  if (error) return <div className="text-center text-red-500 dark:text-red-400 p-8 font-bold">{error}</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="text-center text-red-500 p-8 font-bold text-lg">
+      <span className="inline-block bg-red-50 p-3 rounded-full border border-red-100 mb-4">
+        ⚠️
+      </span>
+      <p>{error}</p>
+    </div>
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">{t('stores')}</h1>
-        <p className="text-slate-500 dark:text-slate-400">
-          {language === 'ar' ? 'اختر متجرك المفضل وتصفح منتجاته' : 'Choose your favorite store and browse its products'}
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* رأس الصفحة مع عنوان ووصف */}
+      <div className="mb-10 text-center md:text-right">
+        <h1 className="text-4xl font-bold text-slate-900 mb-3 tracking-tight">
+          {t('stores')}
+        </h1>
+        <p className="text-slate-600 text-lg max-w-2xl">
+          {language === 'ar' ? 'اختر متجرك المفضل وتصفح منتجاته الطازجة' : 'Choose your favorite store and browse its fresh products'}
         </p>
       </div>
       
       {restaurants.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors">
-          <Store className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-2">{t('no_products')}</h3>
-          <p className="text-slate-500 dark:text-slate-400">
-            {language === 'ar' ? 'لم يتم إضافة أي متاجر أو حسابات مدراء بعد.' : 'No stores or admin accounts have been added yet.'}
-          </p>
+        // حالة الصفحة الفارغة بتصميم أنيق
+        <div className="text-center py-20 bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center gap-6">
+          <div className="bg-slate-50 p-6 rounded-full border border-slate-100">
+            <Store className="w-16 h-16 text-slate-300" />
+          </div>
+          <div className="max-w-md">
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">
+              {t('no_products')}
+            </h3>
+            <p className="text-slate-600">
+              {language === 'ar' ? 'لم يتم إضافة أي متاجر بعد. كن أول من يضيف متجراً!' : 'No stores have been added yet. Be the first to add a store!'}
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        // حاوية شبكية متجاوبة وذكية للمتاجر
+        // col-1 على الموبايل، col-2 على الشاشات المتوسطة، col-3-4 على الشاشات الكبيرة
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
           {restaurants.map(restaurant => (
             <div 
               key={restaurant.id} 
               onClick={() => navigate(`/restaurant/${restaurant.id}`)}
-              className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-slate-100 dark:border-slate-700 cursor-pointer group"
+              className="bg-white rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer group flex flex-col"
             >
-              <div className="relative aspect-[4/3] overflow-hidden bg-slate-50 dark:bg-slate-700/50">
+              {/* حاوية الصورة بنسبة عرض إلى ارتفاع ثابتة */}
+              <div className="relative aspect-video overflow-hidden bg-slate-100">
                 {restaurant.store_image ? (
                   <img 
                     src={restaurant.store_image} 
@@ -73,22 +97,27 @@ export default function Home() {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-800">
-                    <Store className="w-16 h-16 text-slate-300 dark:text-slate-600" />
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Store className="w-16 h-16 text-slate-300" />
                   </div>
                 )}
+                {/* تأثير طبقة خفيفة على الصورة عند الحوم */}
+                <div className="absolute inset-0 bg-emerald-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
               
-              <div className="p-5 flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-slate-800 dark:text-white text-lg mb-1">{restaurant.name}</h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm">
-                    {language === 'ar' ? 'اضغط لتصفح المنتجات' : 'Click to browse products'}
+              {/* بيانات المتجر مع السهم */}
+              <div className="p-6 flex items-center justify-between gap-3 mt-auto">
+                <div className="flex-grow">
+                  <h3 className="font-bold text-slate-900 text-xl mb-1 group-hover:text-emerald-700 transition-colors">
+                    {restaurant.name}
+                  </h3>
+                  <p className="text-slate-500 text-sm">
+                    {language === 'ar' ? 'تصفح المنتجات الطازجة' : 'Browse fresh products'}
                   </p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-white transition-colors">
-                  {/* السهم يلتف تلقائياً إذا كانت اللغة إنجليزية */}
-                  <ChevronLeft className={`w-5 h-5 ${language === 'en' ? 'rotate-180' : ''}`} />
+                {/* أيقونة السهم في دائرة أنيقة */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 transform group-hover:scale-110">
+                  <ChevronLeft className={`w-6 h-6 ${language === 'en' ? 'rotate-180' : ''}`} />
                 </div>
               </div>
             </div>
